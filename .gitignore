@@ -1,8 +1,25 @@
+# Eclipse stuff
+/.classpath
+/.project
+/.settings
 
-*.ipr
-*.iws
-*.jar
-/out
-/Bukkit/
-/CraftBukkit/
-/mc-dev/
+# netbeans
+/nbproject
+
+# we use maven!
+/build.xml
+
+# maven
+/target
+
+# vim
+.*.sw[a-p]
+
+# various other potential build files
+/build
+/bin
+/dist
+/manifest.mf
+
+# Mac filesystem dust
+/.DS_Store
