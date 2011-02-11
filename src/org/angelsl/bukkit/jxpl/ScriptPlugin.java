@@ -1,122 +1,72 @@
 package org.angelsl.bukkit.jxpl;
 
 import org.bukkit.Server;
-import org.bukkit.command.Command;
-import org.bukkit.command.CommandSender;
 import org.bukkit.event.Event;
+import org.bukkit.event.Event.Type;
 import org.bukkit.event.Listener;
+import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.Plugin;
-import org.bukkit.plugin.PluginDescriptionFile;
-import org.bukkit.plugin.PluginLoader;
-import org.bukkit.util.config.Configuration;
+import org.bukkit.plugin.PluginDescription;
 
 import javax.script.Invocable;
 import javax.script.ScriptEngine;
-import java.io.File;
-import java.util.HashMap;
+
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-/**
- * Created by IntelliJ IDEA.
- * User: angelsl
- * Date: 2/6/11
- * Time: 3:01 PM
- * To change this template use File | Settings | File Templates.
- */
 public class ScriptPlugin implements Plugin, Listener {
 
     static Logger l = Logger.getLogger("Minecraft.JxplPlugin");
 
-    private boolean isEnabled = false;
-    private final PluginLoader loader;
     private final Server server;
-    private final File file;
-    private final PluginDescriptionFile description;
-    private final File dataFolder;
-    private Invocable sEngine;
-    private final HashMap<Event.Type, String> eventHandlers = new HashMap<Event.Type, String>();
+    private final ScriptDescription description;
+    private final Invocable invocable;
 
-
-    public ScriptPlugin(PluginLoader pluginLoader, Server instance, PluginDescriptionFile desc, File folder, File plugin, ScriptEngine engine) {
-        loader = pluginLoader;
-        server = instance;
-        file = plugin;
-        description = desc;
-        dataFolder = folder;
+    public ScriptPlugin(Server server, ScriptDescription description) {
+        final ScriptEngine engine = description.getScriptEngine();
+        this.server = server;
+        this.description = description;
+        this.invocable = (Invocable)description.getScriptEngine();
         engine.put("plugin", this);
-        sEngine = (Invocable)engine;
     }
 
-    @Override
-    public File getDataFolder() {
-        return dataFolder;
-    }
-
-    @Override
-    public PluginDescriptionFile getDescription() {
+    public PluginDescription getDescription() {
         return description;
     }
 
-    @Override
-    public Configuration getConfiguration() {
-        throw new RuntimeException("Script plugins do not have separate configuration files");
-    }
-
-    @Override
-    public PluginLoader getPluginLoader() {
-        return loader;
-    }
-
-    @Override
     public Server getServer() {
         return server;
     }
 
-    @Override
-    public boolean isEnabled() {
-        return isEnabled;
-    }
-
-    @Override
-    public void onDisable() {
-        isEnabled = false;
-        tryInvoke("onDisable");
-    }
-
-    private Object tryInvoke(String funcName, Object... params)
+    public Object tryInvoke(String funcName, Object... params)
     {
         try {
-            return sEngine.invokeFunction(funcName, params);
-        } catch (Throwable e) {
-            l.log(Level.WARNING, "Error while running "+ funcName+" of script " + file.getName() + ".", e);
+            return invocable.invokeFunction(funcName, params);
+        } catch (NoSuchMethodException ex) {
+            // Do nothing, the script doesn't want to handle this.
+        } catch (Exception e) {
+            l.log(Level.WARNING, "Error while running " + funcName + " of script " + description.getName() + ".", e);
         }
         return null;
     }
 
-    @Override
-    public void onEnable() {
-        isEnabled = true;
-        tryInvoke("onEnable");
-    }
+    private final class ScriptExecutor implements EventExecutor {
+        private final Type type;
+        private final String functionName;
 
-    @Override
-    public boolean onCommand(CommandSender sender, Command command, String commandLabel, String[] args) {
-        return false;
-    }
+        public ScriptExecutor(final Event.Type type, final String functionName) {
+            this.type = type;
+            this.functionName = functionName;
+        }
 
-    public void handleEvent(Event.Type type, Event args)
-    {
-        if(isEnabled && eventHandlers.containsKey(type))
-        {
-            tryInvoke(eventHandlers.get(type), type, args);
+        public void execute(Listener listener, Event event) {
+            tryInvoke(functionName, type, event);
         }
     }
 
-    public void registerEvent(Event.Type event, Event.Priority priority, String functionName)
+    public void registerEvent(Event.Type type, Event.Priority priority, String functionName)
     {
-        eventHandlers.put(event, functionName);
-        server.getPluginManager().registerEvent(event, this, priority, this);
+        server.getPluginManager().registerEvent(type, this, new ScriptExecutor(type, functionName), priority, this);
     }
     
     public void log(Level l, String message)
