@@ -3,7 +3,6 @@ package org.angelsl.bukkit.jxpl;
 import org.bukkit.Server;
 import org.bukkit.event.Event;
 import org.bukkit.event.Event.Type;
-import org.bukkit.event.Listener;
 import org.bukkit.plugin.EventExecutor;
 import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.PluginDescription;
@@ -14,7 +13,7 @@ import javax.script.ScriptEngine;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 
-public class ScriptPlugin implements Plugin, Listener {
+public class ScriptPlugin implements Plugin {
 
     static Logger l = Logger.getLogger("Minecraft.JxplPlugin");
 
@@ -59,14 +58,14 @@ public class ScriptPlugin implements Plugin, Listener {
             this.functionName = functionName;
         }
 
-        public void execute(Listener listener, Event event) {
+        public void execute(Event event) {
             tryInvoke(functionName, type, event);
         }
     }
 
     public void registerEvent(Event.Type type, Event.Priority priority, String functionName)
     {
-        server.getPluginManager().registerEvent(type, this, new ScriptExecutor(type, functionName), priority, this);
+        server.getPluginManager().registerEvent(this, type, priority, new ScriptExecutor(type, functionName));
     }
     
     public void log(Level l, String message)

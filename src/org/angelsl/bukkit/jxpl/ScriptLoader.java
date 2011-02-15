@@ -1,8 +1,6 @@
 package org.angelsl.bukkit.jxpl;
 
 import org.bukkit.Server;
-import org.bukkit.event.Event;
-import org.bukkit.event.Listener;
 import org.bukkit.plugin.*;
 
 import javax.script.*;
@@ -48,11 +46,6 @@ public class ScriptLoader implements PluginLoader {
 
     public Plugin getContainingPlugin() {
         return containing;
-    }
-
-    public EventExecutor createExecutor(final Event.Type type, Listener listener) {
-        // FIXME, but this shouldn't happen in practice.
-        return null;
     }
 
     public void discoverPlugins() {
